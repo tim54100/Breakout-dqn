@@ -40,22 +40,22 @@ if __name__ == "__main__":
         total_reward=0
         done = False
 	health=5 
-	start=True
+	start=False
 
         while not done:
             #env.render()
             action_probs = RL.make_policy(state, RL.q_estimator)
             action = np.random.choice(np.arange(len(action_probs)))
 		
-	    if start && health!=info['health']:
-		health=info['health']
+	    if start and health!=info['ale.lives']:
+		health=info['ale.lives']
 		action=1
 	    else:
-		start=False
-
+		start=True
             action_tracker[action]+=1
             
             n_state, reward, done, info = env.step(action)
+	    #print(info)
             n_state = cv2.cvtColor(cv2.resize(n_state, (80, 80)), cv2.COLOR_BGR2GRAY)
             ret, n_state = cv2.threshold(n_state, 1, 255, cv2.THRESH_BINARY)
             n_state = np.reshape(n_state, (80, 80, 1))
