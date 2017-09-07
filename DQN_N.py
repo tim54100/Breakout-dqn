@@ -53,13 +53,14 @@ class DeepQNetwork:
         self.target_estimator = Estimator(scope="target_q")
         
         self.saver = tf.train.Saver()
-        checkpoint = tf.train.get_checkpoint_state("saved_networks")
+        self.sess = tf.Session()
+
+        checkpoint = tf.train.get_checkpoint_state("saved_n")
         if checkpoint and checkpoint.model_checkpoint_path:
-            saver.restore(sess, checkpoint.model_checkpoint_path)
+            self.saver.restore(self.sess, checkpoint.model_checkpoint_path)
             print("Successfully loaded:", checkpoint.model_checkpoint_path)
         else:
             print("Could not find old network weights")
-        self.sess = tf.Session()
 
         if not os.path.exists('saved_n'):
             os.makedirs('saved_n')

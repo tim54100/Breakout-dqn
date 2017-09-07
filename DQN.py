@@ -27,7 +27,7 @@ if __name__ == "__main__":
             memory_size=20000,
             )
     step = 0
-    for episode in range(300):
+    for episode in range(3000):
         state = env.reset()
         
         state = cv2.cvtColor(cv2.resize(state, (80, 80)), cv2.COLOR_BGR2GRAY)
@@ -61,7 +61,7 @@ if __name__ == "__main__":
             state=n_state
             
             step+=1
-        print('total_reward: %d' % (total_reward))
+        print('episode: %d/3000, total_reward: %d' % (episode, total_reward))
         print('action'+'action'.join(str(i)+': '+str(action_tracker[i])[:-2]+'  ' for i in range(len(action_tracker))))
     RL.plot_cost()
 
