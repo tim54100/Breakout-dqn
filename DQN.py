@@ -18,7 +18,7 @@ import gym
 if __name__ == "__main__":
     #creat a env,the example is Breakout-v0
     env = gym.make('Breakout-v0')
-    RL = DeepQNetwork(env.action_space.n,
+    RL = DeepQNetwork(env.action_space.n-1,
             str(env.observation_space)[4:-1].split(','),
             learning_rate=0.01,
             reward_decay=0.9,
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         while not done:
             #env.render()
             action_probs = RL.make_policy(state, RL.q_estimator)
-            action = np.random.choice(np.arange(len(action_probs)))
+            action = np.random.choice(np.arange(len(action_probs)))+1
 		
 	    if start and health!=info['ale.lives']:
 		health=info['ale.lives']
