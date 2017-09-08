@@ -61,7 +61,7 @@ if __name__ == "__main__":
             state=n_state
             
             step+=1
-        print('episode: %d/3000, otal_reward: %d' % (episode, total_reward))
+        print('episode: %d/3000, total_reward: %d' % (episode, total_reward))
         print('action'+'action'.join(str(i)+': '+str(action_tracker[i])[:-2]+'  ' for i in range(len(action_tracker))))
     RL.plot_cost()
 
