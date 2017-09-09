@@ -46,6 +46,7 @@ if __name__ == "__main__":
             #env.render()
             action_probs = RL.make_policy(state, RL.q_estimator)
             action = np.random.choice(np.arange(len(action_probs)))+1
+	    #print(action_probs)
 		
 	    if start and health!=info['ale.lives']:
 		health=info['ale.lives']
@@ -55,21 +56,20 @@ if __name__ == "__main__":
             action_tracker[action]+=1
             
             n_state, reward, done, info = env.step(action)
-	    #print(info)
             n_state = cv2.cvtColor(cv2.resize(n_state, (80, 80)), cv2.COLOR_BGR2GRAY)
             ret, n_state = cv2.threshold(n_state, 1, 255, cv2.THRESH_BINARY)
             n_state = np.reshape(n_state, (80, 80, 1))
             n_state = np.append(n_state, state[:, :, :3], axis=2)
             total_reward+=reward
-            RL.store_transition(state, action, reward, done, n_state)
+            RL.store_transition(state, action-1, reward, done, n_state)
             
-            if (step > 20000):
+            if (step > 2000):
                 RL.learn()
                 
             state=n_state
             
             step+=1
-        print('episode: %d/3000, total_reward: %d' % (episode, total_reward))
+        print('episode: %d/3000, total_reward: %d, epsilon: %f' % (episode, total_reward, RL.epsilon))
         print('action'+'action'.join(str(i)+': '+str(action_tracker[i])[:-2]+'  ' for i in range(len(action_tracker))))
     RL.plot_cost()
 

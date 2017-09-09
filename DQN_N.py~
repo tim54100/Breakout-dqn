@@ -24,7 +24,7 @@ class DeepQNetwork:
         learning_rate=0.01,
         reward_decay=0.9,
         epsilon_start=0.9,
-        replace_target_iter=300,
+        replace_target_iter=3000,
         memory_size=20000,
         batch_size=32,
         epsilon_decrease=True,
@@ -38,6 +38,9 @@ class DeepQNetwork:
         self.gamma = reward_decay
         self.epsilon_decrease =  epsilon_decrease
         self.epsilon = epsilon_start if epsilon_decrease else 0
+	self.epsilon_start = epsilon_start 
+	self.epsilon_end = 0.0001
+	self.explore = 300000
         self.memory_size = memory_size
         self.batch_size = batch_size
         self.replace_target_iter = replace_target_iter
@@ -61,6 +64,7 @@ class DeepQNetwork:
             print("Successfully loaded:", checkpoint.model_checkpoint_path)
         else:
             print("Could not find old network weights")
+
         if not os.path.exists('saved_n'):
             os.makedirs('saved_n')
         if output_graph:
@@ -74,15 +78,18 @@ class DeepQNetwork:
         A =np.ones(self.n_actions, dtype=float) * self.epsilon / self.n_actions
         q_values = estimator.predict(self.sess, np.expand_dims(state, 0))[0]
         best_action = np.argmax(q_values)
+	#print(best_action)
         A[best_action] += (1.0 - self.epsilon)
+	#print(self.epsilon)
         if self.epsilon_decrease:
-            self.epsilon *= 0.9
+            self.epsilon -= ((self.epsilon_start-self.epsilon_end)/self.explore)
         return A
     def store_transition(self, state, action, reward, done, n_state):
         if len(self.replay_memory) == self.memory_size:
             self.replay_memory.pop(0)
         self.replay_memory.append(self.Transition(state, action, reward, n_state, done))
     def learn(self):
+	#print("wtf")
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.target_estimator.replace_parms(self.sess, self.q_estimator)
             self.saver.save(self.sess, 'saved_n/saved', global_step=self.learn_step_counter)
@@ -92,7 +99,7 @@ class DeepQNetwork:
         q_values = self.q_estimator.predict(self.sess, next_states_batch)
         best_actions = np.argmax(q_values, axis=1)
         q_target = self.target_estimator.predict(self.sess, next_states_batch)
-        targets_batch = reward_batch + np.invert(done_batch).astype(np.float32) *             self.gamma * q_target[np.arange(self.batch_size), best_actions]
+        targets_batch = reward_batch + np.invert(done_batch).astype(np.float32) * self.gamma * q_target[np.arange(self.batch_size), best_actions]
         states_batch = np.array(states_batch)
         loss = self.q_estimator.update(self.sess, np.array(states_batch), np.array(action_batch), np.array(targets_batch))
         self.cost_his.append(loss)
