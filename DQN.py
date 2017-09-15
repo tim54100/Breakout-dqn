@@ -97,13 +97,13 @@ if __name__ == "__main__":
             total_reward+=reward
             RL.store_transition(state, action-1, reward, done, n_state)
             
-            if (step > 2000):
+            if (step > 20000):
                 RL.learn()
                 
             state=n_state
             
             step+=1
-        print('episode: %d/3000, total_reward: %d, epsilon: %f' % (episode, total_reward, RL.epsilon))
+        print('episode: %d/3000, epsilon: %f, total_reward: %d' % (episode, RL.epsilon, total_reward))
         print('action'+'action'.join(str(i)+': '+str(action_tracker[i])[:-2]+'  ' for i in range(len(action_tracker))))
     RL.plot_cost()
 
