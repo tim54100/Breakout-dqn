@@ -25,6 +25,7 @@ if __name__ == "__main__":
             epsilon_start=0.9,
             replace_target_iter=2000,
             memory_size=20000,
+	    epsilon_decrease=False,
             )
     step = 0
     for episode in range(3000):
@@ -69,7 +70,6 @@ if __name__ == "__main__":
             state=n_state
             
             step+=1
-	print(step)
         print('episode: %d/3000, total_reward: %d, epsilon: %f' % (episode, total_reward, RL.epsilon))
         print('action'+'action'.join(str(i)+': '+str(action_tracker[i])[:-2]+'  ' for i in range(len(action_tracker))))
     RL.plot_cost()

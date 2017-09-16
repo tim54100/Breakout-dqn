@@ -79,6 +79,8 @@ class DeepQNetwork:
         q_values = estimator.predict(self.sess, np.expand_dims(state, 0))[0]
         best_action = np.argmax(q_values)
 	#print(best_action)
+	if best_action>=2:
+	    best_action=2
         A[best_action] += (1.0 - self.epsilon)
 	#print(self.epsilon)
         if self.epsilon_decrease:
@@ -99,7 +101,7 @@ class DeepQNetwork:
         q_values = self.q_estimator.predict(self.sess, next_states_batch)
         best_actions = np.argmax(q_values, axis=1)
         q_target = self.target_estimator.predict(self.sess, next_states_batch)
-        targets_batch = reward_batch + np.invert(done_batch).astype(np.float32) * self.gamma * q_target[np.arange(self.batch_size), best_actions]
+        targets_batch = reward_batch + self.gamma * q_target[np.arange(self.batch_size), best_actions]
         states_batch = np.array(states_batch)
         loss = self.q_estimator.update(self.sess, np.array(states_batch), np.array(action_batch), np.array(targets_batch))
         self.cost_his.append(loss)

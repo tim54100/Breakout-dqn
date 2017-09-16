@@ -37,9 +37,9 @@ class DeepQNetwork:
         self.lr = learning_rate
         self.gamma = reward_decay
         self.epsilon_decrease =  epsilon_decrease
-        self.epsilon = epsilon_start if epsilon_decrease else 0
 	self.epsilon_start = epsilon_start 
 	self.epsilon_end = 0.0001
+        self.epsilon = epsilon_start if epsilon_decrease else self.epsilon_end
 	self.explore = 300000
         self.memory_size = memory_size
         self.batch_size = batch_size
@@ -101,7 +101,7 @@ class DeepQNetwork:
         q_values = self.q_estimator.predict(self.sess, next_states_batch)
         best_actions = np.argmax(q_values, axis=1)
         q_target = self.target_estimator.predict(self.sess, next_states_batch)
-        targets_batch = reward_batch + np.invert(done_batch).astype(np.float32) * self.gamma * q_target[np.arange(self.batch_size), best_actions]
+        targets_batch = reward_batch + self.gamma * q_target[np.arange(self.batch_size), best_actions]
         states_batch = np.array(states_batch)
         loss = self.q_estimator.update(self.sess, np.array(states_batch), np.array(action_batch), np.array(targets_batch))
         self.cost_his.append(loss)
