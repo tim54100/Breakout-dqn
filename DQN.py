@@ -73,20 +73,20 @@ if __name__ == "__main__":
         action_tracker=np.zeros(env.action_space.n)
         total_reward=0
         done = False
-	health=5 
-	start=False
+        health=5 
+        start=False
 
         while not done:
             #env.render()
-            action_probs = RL.make_policy(state, RL.q_estimator)
-            action = np.random.choice(np.arange(len(action_probs)))+1
-	    #print(action_probs)
-		
-	    if start and health!=info['ale.lives']:
-		health=info['ale.lives']
-		action=1
-	    else:
-		start=True
+            action_probs = RL.make_policy(state)
+            action = np.random.choice(np.arange(len(action_probs)), p=action_probs)+1
+            #print(action_probs)
+    
+            if start and health!=info['ale.lives']:
+                health=info['ale.lives']
+                action=1
+            else:
+                start=True
             action_tracker[action]+=1
             
             n_state, reward, done, info = env.step(action)
@@ -105,14 +105,10 @@ if __name__ == "__main__":
             step+=1
         print('episode: %d/3000, epsilon: %f, total_reward: %d' % (episode, RL.epsilon, total_reward))
         print('action'+'action'.join(str(i)+': '+str(action_tracker[i])[:-2]+'  ' for i in range(len(action_tracker))))
-    RL.plot_cost()
+    #RL.plot_cost()
 
 
 # In[27]:
-
-env = gym.make('Breakout-v0')
-st_shape=str(env.observation_space)[4:-1].split(',')
-width = int(st_shape[0])
 
 
 # In[ ]:
