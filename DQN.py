@@ -97,7 +97,7 @@ if __name__ == "__main__":
             total_reward+=reward
             RL.store_transition(state, action-1, reward, done, n_state)
             
-            if (step > 2000):
+            if (step > 200):
                 RL.learn()
                 
             state=n_state

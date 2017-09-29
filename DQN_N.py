@@ -179,8 +179,8 @@ class DeepQNetwork:
         
     def update(self, sess, s, a, y):
         feed_dict = { self.x_pl: s, self.q_target_pl: y, self.actions_pl: a }
-        global_step, _, loss = sess.run(
-            [tf.contrib.framework.get_global_step(), self.train_op, self.loss],
+        _, loss = sess.run(
+            [self.train_op, self.loss],
             feed_dict)
         return loss
 
