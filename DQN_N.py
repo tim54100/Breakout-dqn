@@ -92,7 +92,7 @@ class DeepQNetwork:
         samples = random.sample(self.replay_memory, self.batch_size)
         states_batch, action_batch, reward_batch, next_states_batch, done_batch = map(np.array, zip(*samples))
         
-        q_values = self.preditc(self.sess, states_batch)
+        q_values = self.predict(self.sess, states_batch)
         best_actions = np.argmax(q_values, axis=1)
         q_target = self.predict_t(self.sess, next_states_batch)
         targets_batch = reward_batch + self.gamma * q_target[np.arange(self.batch_size), best_actions]
