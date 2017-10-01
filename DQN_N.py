@@ -178,7 +178,7 @@ class DeepQNetwork:
         sess.run([tf.assign(t, e) for t, e in zip(t_parms, e_parms)])
         
     def update(self, sess, s, a, y):
-        feed_dict = { self.x_pl: s, self.y_pl: y, self.actions_pl: a }
+        feed_dict = { self.x_pl: s, self.q_target_pl: y, self.actions_pl: a }
         global_step, _, loss = sess.run(
             [tf.contrib.framework.get_global_step(), self.train_op, self.loss],
             feed_dict)
