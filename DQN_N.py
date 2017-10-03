@@ -14,7 +14,7 @@ np.random.seed(1)
 tf.set_random_seed(1)
 
 
-# In[12]:
+# In[39]:
 
 class DeepQNetwork:
     def __init__(
@@ -82,22 +82,25 @@ class DeepQNetwork:
             self.epsilon -= ((self.epsilon_start-self.epsilon_end)/self.explore)
         return A
     def store_transition(self, state, action, reward, done, n_state):
+        #transition = [state, action, reward, n_state, done]
         self.replay_memory.store(self.Transition(state, action, reward, n_state, done))
-        
+        #self.replay_memory.store(transition)
     def learn(self):
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.replace_parms(self.sess)
             self.saver.save(self.sess, 'saved_n/saved', global_step=self.learn_step_counter)
-        tree_idx, batch_memory, ISWeights = self.memory.sample(self.batch_size)
-        states_batch, action_batch, reward_batch, next_states_batch, done_batch = map(np.array, zip(*samples))
+        tree_idx, batch_memory, ISWeights = self.replay_memory.sample(self.batch_size)
+        states_batch, action_batch, reward_batch, next_states_batch, done_batch = map(np.array, zip(*batch_memory))
         
         q_values = self.predict(self.sess, states_batch)
         best_actions = np.argmax(q_values, axis=1)
         q_target = self.predict_t(self.sess, next_states_batch)
-        targets_batch = reward_batch + self.gamma * q_target[np.arange(self.batch_size), best_actions]
+        targets_all_batch = q_target
+        targets_all_batch[ : , action_batch.astype(np.int32)] = reward_batch +  self.gamma * q_target[np.arange(self.batch_size), best_actions]
+        targets_batch = reward_batch + np.invert(done_batch).astype(np.float32) * self.gamma * q_target[np.arange(self.batch_size), best_actions]
         states_batch = np.array(states_batch)
         loss = self.update(self.sess, np.array(states_batch), np.array(action_batch), np.array(targets_batch),
-                           ISWeights, tree_idx)
+                           np.array(targets_all_batch), ISWeights, tree_idx)
         self.cost_his.append(loss)
         
         self.learn_step_counter += 1
@@ -149,6 +152,7 @@ class DeepQNetwork:
                 
             return out
         self.x_pl = tf.placeholder(tf.float32, [None, 80, 80,4], name='x')
+        self.q_target_all_pl = tf.placeholder(tf.float32, [None, self.n_actions], name="Q_target_all")
         self.q_target_pl = tf.placeholder(tf.float32, [None], name="Q_target")
         self.actions_pl = tf.placeholder(tf.int32, [None], name="actions")
         self.ISWeights = tf.placeholder(tf.float32, [None, 1], name='IS_weights')
@@ -162,7 +166,7 @@ class DeepQNetwork:
         self.action_predictions = tf.gather(tf.reshape(self.q_eval, [-1]), gather_indices)
         
         with tf.variable_scope('loss'):
-            self.abs_errors = tf.reduce_sum(tf.abs(self.q_target_pl - self.q_eval), axis=1)
+            self.abs_errors = tf.reduce_sum(tf.abs(self.q_target_all_pl - self.q_eval), axis=1)
             self.losses = tf.squared_difference(self.q_target_pl, self.action_predictions)
             self.loss = tf.reduce_mean(self.ISWeights * self.losses)
             
@@ -181,10 +185,10 @@ class DeepQNetwork:
         e_parms = tf.get_collection('eval_net_params')
         sess.run([tf.assign(t, e) for t, e in zip(t_parms, e_parms)])
         
-    def update(self, sess, s, a, y, ISWeights, tree_idx):
-        feed_dict = { self.x_pl: s, self.q_target_pl: y, self.actions_pl: a, self.ISWeights: ISWeights }
-        _, abs_errors, loss = self.sess.run([self._train_op, self.abs_errors, self.loss],feed_dict)
-        self.memory.batch_update(tree_idx, abs_errors) # update priority
+    def update(self, sess, s, a, y, y_all, ISWeights, tree_idx):
+        feed_dict = { self.x_pl: s, self.q_target_pl: y, self.q_target_all_pl: y_all, self.actions_pl: a, self.ISWeights: ISWeights }
+        _, abs_errors, loss = self.sess.run([self.train_op, self.abs_errors, self.loss],feed_dict)
+        self.replay_memory.batch_update(tree_idx, abs_errors) # update priority
         return loss
 
 
@@ -203,18 +207,19 @@ class SumTree(object):
         self.tree = np.zeros(2 * capacity - 1)
         # [--------------Parent nodes-------------][-------leaves to recode priority-------]
         #             size: capacity - 1                       size: capacity
-        self.data = np.zeros(capacity, dtype=object)  # for all transitions
+        self.data = []  # for all transitions
         # [--------------data frame-------------]
         #             size: capacity
 
     def add(self, p, data):
         tree_idx = self.data_pointer + self.capacity - 1
-        self.data[self.data_pointer] = data  # update data_frame
+        self.data.append(data)  # update data_frame
         self.update(tree_idx, p)  # update tree_frame
 
         self.data_pointer += 1
         if self.data_pointer >= self.capacity:  # replace when exceed the capacity
             self.data_pointer = 0
+            self.data.pop(0)
 
     def update(self, tree_idx, p):
         change = p - self.tree[tree_idx]
@@ -278,18 +283,19 @@ class Memory(object):  # stored as ( s, a, r, s_ ) in SumTree
         self.tree.add(max_p, transition)   # set the max p for new p
 
     def sample(self, n):
-        b_idx, b_memory, ISWeights = np.empty((n,), dtype=np.int32), np.empty((n, self.tree.data[0].size)), np.empty((n, 1))
-        pri_seg = self.tree.total_p / n       # priority segment
+        b_idx, b_memory, ISWeights = np.empty((n,), dtype=np.int32), [], np.empty((n, 1))
+        pri_seg = (self.tree.total_p() / n)       # priority segment
         self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])  # max = 1
 
-        max_prob = np.max(self.tree.tree[-self.tree.capacity:]) / self.tree.total_p     # for later calculate ISweight
+        max_prob = np.max(self.tree.tree[-self.tree.capacity:]) / self.tree.total_p()     # for later calculate ISweight
         for i in range(n):
             a, b = pri_seg * i, pri_seg * (i + 1)
             v = np.random.uniform(a, b)
             idx, p, data = self.tree.get_leaf(v)
-            prob = p / self.tree.total_p
+            prob = p / self.tree.total_p()
             ISWeights[i, 0] = np.power(prob/max_prob, -self.beta)
-            b_idx[i], b_memory[i, :] = idx, data
+            b_idx[i] = idx
+            b_memory.append(data)
         return b_idx, b_memory, ISWeights
 
     def batch_update(self, tree_idx, abs_errors):
@@ -305,27 +311,42 @@ class Memory(object):  # stored as ( s, a, r, s_ ) in SumTree
 
 
 
-# In[ ]:
+# In[73]:
+
+#np.array(a*4).shape
+
+
+# In[62]:
+
+#s=np.hstack(([[1,80],80,4], [1], [1], [1,80,80,4], [1]))
+
+
+# In[49]:
+
+#Transition = namedtuple("Transition", ["state", "action", "reward", "next_state", "done"])
+
+
+# In[60]:
+
+#t=Transition([1,80,80,4], [1], [1], [1,80,80,4], [1])
+
+
+# In[79]:
+
+#a= [[0,1,2],[3,4,5]]
+
+
+# In[97]:
+
+b= np.array([0,1,2,3,4,5,6])
+
+
+# In[107]:
 
 
 
 
-# In[27]:
-
-
-
-
-# In[30]:
-
-
-
-
-# In[ ]:
-
-
-
-
-# In[ ]:
+# In[105]:
 
 
 
