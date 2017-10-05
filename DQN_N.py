@@ -96,7 +96,7 @@ class DeepQNetwork:
         best_actions = np.argmax(q_values, axis=1)
         q_target = self.predict_t(self.sess, next_states_batch)
         targets_all_batch = q_target
-        targets_all_batch[ : , action_batch.astype(np.int32)] = reward_batch +  self.gamma * q_target[np.arange(self.batch_size), best_actions]
+        targets_all_batch[ : , action_batch.astype(np.int32)] = reward_batch +  self.gamma * np.max(q_target, axis=1)
         targets_batch = reward_batch + np.invert(done_batch).astype(np.float32) * self.gamma * q_target[np.arange(self.batch_size), best_actions]
         states_batch = np.array(states_batch)
         loss = self.update(self.sess, np.array(states_batch), np.array(action_batch), np.array(targets_batch),
