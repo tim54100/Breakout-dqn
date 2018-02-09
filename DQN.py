@@ -1,23 +1,21 @@
-
 # coding: utf-8
 
-# In[38]:
 
-import tensorflow as tf
 import numpy as np
 from DQN_N import DeepQNetwork
 import sys
-sys.path.append("/home/eastgeno/workspace/gym")
-sys.path.append("/home/eastgeno/anaconda2/lib/python2.7/site-packages")
+# sys.path.append("/home/eastgeno/workspace/gym")
+# sys.path.append("/home/eastgeno/anaconda2/lib/python2.7/site-packages")
 import cv2
+import pyglet
+import tensorflow as tf
 import gym
 from gym.wrappers import SkipWrapper
 from scipy.misc import imresize
 from gym.core import ObservationWrapper
 from gym.spaces.box import Box
+from gym import wrappers
 
-
-# In[39]:
 class PreprocessImage(ObservationWrapper):
     def __init__(self, env, height=64, width=64, grayscale=True,
                  crop=lambda img: img):
@@ -46,77 +44,142 @@ def make_env():
     env_spec.id = 'Breakout-v0'
     env = env_spec.make()
     e = PreprocessImage(SkipWrapper(4)(env),
-                                 width=80, height=80, grayscale=True)
+                                 width=84, height=84, grayscale=True)
     return e
 
 if __name__ == "__main__":
     #creat a env,the example is Breakout-v0
+
     env = make_env()
-    RL = DeepQNetwork(env.action_space.n-1,
+    env = wrappers.Monitor(env, './experiment', force=True)
+    RL = DeepQNetwork(env.action_space.n,
             str(env.observation_space)[4:-1].split(','),
-            learning_rate=0.01,
-            reward_decay=0.9,
-            epsilon_start=0.9,
-            replace_target_iter=2000,
-            memory_size=20000,
+            learning_rate= 0.000025,
+            reward_decay =0.99,
+            epsilon_start= 0.1,
+            epsilon_end = 0.1,
+            explore = 1000000,
+            replace_target_iter=10000,
+            memory_size= 100000,
+            batch_size = 32,
+            training = True,
             )
+    #env = wrappers.Monitor(env, './experiment', force=True)
     step = 0
-    for episode in range(3000):
-        state = env.reset()
-        
+    loss_step =0
+    RL.epsilon_decrease=False
+    num_game = 0
+    while(True):
+        loss = 0
+        loss_m =0
+        loss_step /=100
+        for episode in range(151):
+            state = env.reset()
+            
         #state = cv2.cvtColor(cv2.resize(state, (80, 80)), cv2.COLOR_BGR2GRAY)
         #ret, state = cv2.threshold(state, 1, 255, cv2.THRESH_BINARY)
         #state = np.reshape(state, (80, 80))
-        state = np.stack((state, state, state, state), axis=2)
+            state = np.stack((state, state, state, state), axis=2)
         #print(state.shape)
         
-        action_tracker=np.zeros(env.action_space.n)
-        total_reward=0
-        done = False
-        health=5 
-        start=False
+            action_tracker=np.zeros(env.action_space.n)
+            total_reward=0
+            done = False
+            lives = -1
+            i = 0
+            info = {}
+            info['ale.lives'] = 5
 
-        while not done:
-            #env.render()
-            action_probs = RL.make_policy(state)
-            action = np.random.choice(np.arange(len(action_probs)), p=action_probs)+1
-            #print(action_probs)
-    
-            if start and health!=info['ale.lives']:
-                health=info['ale.lives']
-                action=1
-            else:
-                start=True
-            action_tracker[action]+=1
-            
-            n_state, reward, done, info = env.step(action)
+            while not done:
+                #env.render()
+                action_probs = RL.make_policy(state)
+                action = np.random.choice(np.arange(len(action_probs)), p=action_probs)
+                #action = RL.make_policy(state)
+                #print(action_probs)
+                #s =False
+                if info['ale.lives'] != lives:
+                    lives = info['ale.lives']
+                    action=1
+                    #s = True
+                action_tracker[action]+=1
+                
+                n_state, reward, done, info = env.step(action)
             #n_state = cv2.cvtColor(cv2.resize(n_state, (80, 80)), cv2.COLOR_BGR2GRAY)
             #ret, n_state = cv2.threshold(n_state, 1, 255, cv2.THRESH_BINARY)
             #n_state = np.reshape(n_state, (80, 80, 1))
-            n_state = np.append(state[:, :, 1:], np.expand_dims(n_state, 2), axis=2)
-            total_reward+=reward
-            RL.store_transition(state, action-1, reward, done, n_state)
-            
-            if (step > 20000):
-                RL.learn()
+            #print(info['ale.lives'])
+                total_reward+=reward
+                #if reward == 0:
+                #    reward=-0.01
+                #else:
+                #    reward/=1000
+                #if info['ale.lives'] != lives or done:
+                #    lives = info['ale.lives']
+                #    reward-=9
+                #    action_tracker[action]-=1
+                #    action = 1
+                #reward/=4
+                #if lives == -1:
+                #    lives = info['ale.lives']
+                '''if s:
+                    state = n_state
+                    state = np.stack((state, state, state, state), axis=2)
+                else:
+                    n_state = np.append(state[:, :, 1:], np.expand_dims(n_state, 2), axis=2)
+                   # n_done = 1 if done else 0
+                    if info['ale.lives'] != lives:
+                        RL.store_transition(state, action, -1, n_state, True)
+                    else:
+                        RL.store_transition(state, action, reward, n_state, done)
+                    step+=1
+                   
+                    state=n_state
+                    if (step > 50000 and step%4 == 0):
+                        loss += RL.learn()
+                        RL.epsilon_decrease=True
+                        i+=1
+                    if step %100 == 0:
+                        print('total_step: %d, step: %d' % (step, i*4))'''
+                n_state = np.append(state[:, :, 1:], np.expand_dims(n_state, 2), axis=2)
+                   # n_done = 1 if done else 0
+                if info['ale.lives'] != lives:
+                    RL.store_transition(state, action, -1, n_state, True)
+                    #lives = info['ale.lives']
+                else:
+                    RL.store_transition(state, action, reward, n_state, done)
+                step+=1
+               
+                state=n_state
+                if (step > RL.memory_size and step%4 == 0):
+                    loss += RL.learn()
+                    i+=1
+                if step > 50000:
+                    RL.epsilon_decrease=True
+                if step %100 == 0:
+                     print('total_step: %d, step: %d' % (step, i*4))
                 
-            state=n_state
-            
-            step+=1
-        print('episode: %d/3000, epsilon: %f, total_reward: %d' % (episode, RL.epsilon, total_reward))
-        print('action'+'action'.join(str(i)+': '+str(action_tracker[i])[:-2]+'  ' for i in range(len(action_tracker))))
-    #RL.plot_cost()
+            loss = loss/i if (i != 0 ) else 0
+            '''if episode % 10 == 0:
+                loss_m =loss
+            if loss_m != 0 and loss != 0 and RL.lr > 1e-06 and loss < 100 and loss >= loss_m and RL.lr != 1e-08:
+                loss_step += 1
+                if loss_step >=10:
+                    RL.lr /= 10
+                    loss_step = -10
+            elif loss*1.1 < loss_m and RL.lr != 1e-08:
+                loss_step -= 1
+                if loss_step <=-10 and RL.lr <0.00001:
+                    #RL.lr *= 10
+                    loss_step = 0'''
 
-
-# In[27]:
-
-
-# In[ ]:
-
-
-
-
-# In[ ]:
-
-
-
+            #print('episode: %d, epsilon: %f, total_reward: %d, loss: %f, lr: %s'%(num_game+episode+1, RL.epsilon, \
+            #      total_reward, loss, str(RL.lr)))
+            print('episode: %d, epsilon: %f, total_reward: %d, loss: %f'%(num_game+episode+1, RL.epsilon, total_reward, loss))
+            #print('episode: %d, epsilon: %f, total_reward: %d, lr: %s'%(num_game+episode+1, RL.epsilon, total_reward, str(RL.lr)))
+            print('action'+'action'.join(str(i)+': '+str(action_tracker[i])[:-2]+'  ' for i in range(len(action_tracker))))
+        '''if RL.epsilon == RL.epsilon_end and RL.epsilon_end == 0.2:
+            RLepsilon_start= RL.epsilon_end
+            RL.explore = 10000000
+            RL.epsilon_end = 0.001'''
+        num_game+=151
+# RL.plot_cost()
