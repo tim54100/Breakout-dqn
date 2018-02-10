@@ -54,13 +54,13 @@ if __name__ == "__main__":
     env = wrappers.Monitor(env, './experiment', force=True)
     RL = DeepQNetwork(env.action_space.n,
             str(env.observation_space)[4:-1].split(','),
-            learning_rate= 0.000025,
+            learning_rate= 0.00025,
             reward_decay =0.99,
             epsilon_start= 0.1,
             epsilon_end = 0.1,
             explore = 1000000,
             replace_target_iter=10000,
-            memory_size= 100000,
+            memory_size= 1000000,
             batch_size = 32,
             training = True,
             )
