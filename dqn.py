@@ -158,7 +158,7 @@ if __name__ == "__main__":
                 if (step > RL.memory_size and step%4 == 0):
                     loss += RL.learn()
                     i+=1
-                if step > RL.memory_size/10:
+                if step > RL.memory_size*0.8:
                     RL.epsilon_decrease=True
                 if step %100 == 0:
                      print('total_step: %d, step: %d' % (step, i*4))
