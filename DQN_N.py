@@ -112,7 +112,7 @@ class DeepQNetwork:
         self.replay_memory.store(self.Transition(state, action, reward, n_state, done))
         #self.replay_memory.append(self.Transition(state, action, reward, n_state, done))
         #if len(self.replay_memory) > self.memory_size:
-        #    self.replay_memory.pop(0)
+            #self.replay_memory.pop(0)
         #self.replay_memory.store(transition)
 
     def learn(self):
@@ -141,7 +141,7 @@ class DeepQNetwork:
         #q_target[batch_index, action_batch.astype(np.int32)] = reward_batch + self.gamma * selected_q_next
         q_target[batch_index, action_batch.astype(np.int32)] = reward_batch + self.gamma * selected_q_next * re_done
         #target = reward_batch + self.gamma * selected_q_next * re_done
-#        targets_batch = reward_batch + self.gamma * q_target[np.arange(self.batch_size), best_actions]
+        #targets_batch = reward_batch + self.gamma * q_target[np.arange(self.batch_size), best_actions]
         #states_batch = np.array(states_batch)
         loss = self.update(self.sess, np.array(states_batch), np.array(q_values), np.array(action_batch), np.array(q_target),
                            ISWeights, tree_idx)
@@ -219,7 +219,7 @@ class DeepQNetwork:
                       , weights_initializer=tf.random_normal_initializer(stddev=0.02), biases_initializer=b_initializer)
                 #self.A =tf.layers.dropout(self.A, rate=0.5, training=self.tf_is_training)
 
-           # with tf.variable_scope('Q'):
+            #with tf.variable_scope('Q'):
                 #out = self.V + (self.A - tf.reduce_mean(self.A, axis=1, keep_dims=True)) # Q = V(s) + A(s,a)
                 out = self.V + (self.A - tf.reduce_mean(self.A, reduction_indices=1, keep_dims=True)) # Q = V(s) + A(s,a)
                 #gather_indices = tf.range(batch_size) * tf.shape(self.predictions)[1] + self.actions_pl
@@ -244,7 +244,7 @@ class DeepQNetwork:
         
         
         with tf.variable_scope('loss'):
-           # self.abs_errors = tf.reduce_sum(tf.abs(self.q_target_pl - self.q_eval), axis=1)    # for updating Sumtree
+            #self.abs_errors = tf.reduce_sum(tf.abs(self.q_target_pl - self.q_eval), axis=1)    # for updating Sumtree
             #self.loss = tf.reduce_mean(self.ISWeights * tf.squared_difference(self.q_target_pl, self.q_eval))
             
             #self.gather_indices = tf.range(self.batch_size) * tf.shape(self.q_eval)[1] + self.actions_pl
@@ -282,7 +282,7 @@ class DeepQNetwork:
         #              self.tf_is_training : self.training }
         feed_dict = { self.x_pl: s, self.q_target_pl: target, self.actions_pl: a, self.ISWeights: ISWeights,
                       self.tf_is_training : self.training }
-       # print y
+        #print y
         self.global_step, _, abs_errors, loss = self.sess.run([tf.contrib.framework.get_global_step(), self.train_op, self.abs_errors\
                    , self.loss],feed_dict)
         #print a
