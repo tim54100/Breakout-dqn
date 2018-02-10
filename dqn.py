@@ -4,8 +4,8 @@
 import numpy as np
 from DQN_N import DeepQNetwork
 import sys
-# sys.path.append("/home/eastgeno/workspace/gym")
-# sys.path.append("/home/eastgeno/anaconda2/lib/python2.7/site-packages")
+#sys.path.append("/home/eastgeno/workspace/gym")
+#sys.path.append("/home/eastgeno/anaconda2/lib/python2.7/site-packages")
 import cv2
 import pyglet
 import tensorflow as tf
@@ -141,7 +141,7 @@ if __name__ == "__main__":
                     if step %100 == 0:
                         print('total_step: %d, step: %d' % (step, i*4))'''
                 n_state = np.append(state[:, :, 1:], np.expand_dims(n_state, 2), axis=2)
-                   # n_done = 1 if done else 0
+                    #n_done = 1 if done else 0
                 if info['ale.lives'] != lives:
                     RL.store_transition(state, action, -1, n_state, True)
                     #lives = info['ale.lives']
