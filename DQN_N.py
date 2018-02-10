@@ -247,8 +247,8 @@ class DeepQNetwork:
            # self.abs_errors = tf.reduce_sum(tf.abs(self.q_target_pl - self.q_eval), axis=1)    # for updating Sumtree
             #self.loss = tf.reduce_mean(self.ISWeights * tf.squared_difference(self.q_target_pl, self.q_eval))
             
-            self.gather_indices = tf.range(self.batch_size) * tf.shape(self.q_eval)[1] + self.actions_pl
-            self.action_predictions = tf.gather(tf.reshape(self.q_eval, [-1]), self.gather_indices)
+            #self.gather_indices = tf.range(self.batch_size) * tf.shape(self.q_eval)[1] + self.actions_pl
+            #self.action_predictions = tf.gather(tf.reshape(self.q_eval, [-1]), self.gather_indices)
             self.abs_errors = tf.reduce_sum(tf.abs(self.q_target_pl - self.q_eval), axis=1)  # for updating Sumtree
             #self.loss = tf.reduce_mean(tf.squared_difference(self.y_pl,  self.action_predictions))
             self.loss = tf.reduce_mean(self.ISWeights * tf.squared_difference(self.q_target_pl, self.q_eval))
