@@ -82,18 +82,19 @@ class DeepQNetwork:
         if not os.path.exists('saved_networks'):
             os.makedirs('saved_networks')
         if output_graph:
-            tf.summary.FileWriter('logs/', self.sess.graph)
+            tf.summary.FileWriter('./logs/', self.sess.graph)
 
         self.cost_his = []
     
     
     def make_policy(self, state):
-        action =np.ones(self.n_actions, dtype=float) * self.epsilon / self.n_actions
+        action_probs =np.ones(self.n_actions, dtype=float) * self.epsilon / self.n_actions
         q_values = self.predict(self.sess, np.expand_dims(state, 0))[0]
         #print np.ones(self.n_actions, dtype=float) * (self.epsilon/ self.n_actions )
         #print "q_values" + str(q_values)
         best_action = np.argmax(q_values)
-        action[best_action] += (1.0 - self.epsilon)
+        action_probs[best_action] += (1.0 - self.epsilon)
+        action = np.random.choice(np.arange(len(action_probs)), p=action_probs)
         #print action
         """if np.random.uniform() > self.epsilon:  # choosing action
             actions_value = self.predict(self.sess, np.expand_dims(state, 0))[0]
