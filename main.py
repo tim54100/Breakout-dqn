@@ -16,6 +16,7 @@ from scipy.misc import imresize
 from gym.core import ObservationWrapper
 from gym.spaces.box import Box
 from gym import wrappers
+from PIL import Image
 
 class PreprocessImage(ObservationWrapper):
     def __init__(self, env, height=64, width=64, grayscale=True,
@@ -57,9 +58,9 @@ if __name__ == "__main__":
             str(env.observation_space)[4:-1].split(','),
             learning_rate= 0.00025,
             reward_decay =0.99,
-            epsilon_start= 1,
-            epsilon_end = 0.1,
-            explore = 1000000,
+            epsilon_start= 0,
+            epsilon_end = 0,
+            explore = 10000000,
             replace_target_iter=10000,
             memory_size= 1000000,
             batch_size = 32,
@@ -74,13 +75,19 @@ if __name__ == "__main__":
     e_step = []
     e_score = []
     epsilon = []
+    e_loss = []
+    push = False
     while(True):
         loss = 0
         loss_m =0
         loss_step /=100
+        total_score = 0
+        total_loss = 0
         for episode in range(1000):
             state = env.reset()
             
+            img = Image.fromarray(np.array(state), 'L')
+            img.show()	
         #state = cv2.cvtColor(cv2.resize(state, (80, 80)), cv2.COLOR_BGR2GRAY)
         #ret, state = cv2.threshold(state, 1, 255, cv2.THRESH_BINARY)
         #state = np.reshape(state, (80, 80))
@@ -88,7 +95,7 @@ if __name__ == "__main__":
         #print(state.shape)
         
             action_tracker=np.zeros(env.action_space.n)
-            total_reward=0
+            score=0
             done = False
             lives = -1
             i = 0
@@ -113,7 +120,7 @@ if __name__ == "__main__":
             #ret, n_state = cv2.threshold(n_state, 1, 255, cv2.THRESH_BINARY)
             #n_state = np.reshape(n_state, (80, 80, 1))
             #print(info['ale.lives'])
-                total_reward+=reward
+                score+=reward
                 #if reward == 0:
                 #    reward=-0.01
                 #else:
@@ -165,6 +172,8 @@ if __name__ == "__main__":
                 
             loss = loss/i if (i != 0 ) else 0
 
+            total_score += score
+            total_loss += loss
             '''if episode % 10 == 0:
                 loss_m =loss
             if loss_m != 0 and loss != 0 and RL.lr > 1e-06 and loss < 100 and loss >= loss_m and RL.lr != 1e-08:
@@ -178,25 +187,35 @@ if __name__ == "__main__":
                     #RL.lr *= 10
                     loss_step = 0'''
 
-            #print('episode: %d, epsilon: %f, total_reward: %d, loss: %f, lr: %s'%(num_game+episode+1, RL.epsilon, \
-            #      total_reward, loss, str(RL.lr)))
-            print('episode: %d, epsilon: %f, total_reward: %d, loss: %f'%(num_game+episode+1, RL.epsilon, total_reward, loss))
-            #print('episode: %d, epsilon: %f, total_reward: %d, lr: %s'%(num_game+episode+1, RL.epsilon, total_reward, str(RL.lr)))
+            #print('episode: %d, epsilon: %f, score: %d, loss: %f, lr: %s'%(num_game+episode+1, RL.epsilon, \
+            #      score, loss, str(RL.lr)))
+            print('episode: %d, epsilon: %f, score: %d, loss: %f'%(num_game+episode+1, RL.epsilon, score, loss))
+            #print('episode: %d, epsilon: %f, score: %d, lr: %s'%(num_game+episode+1, RL.epsilon, score, str(RL.lr)))
             print('action'+'action'.join(str(i)+': '+str(action_tracker[i])[:-2]+'  ' for i in range(len(action_tracker))))
-            if loss != 0:
-                e_step.append(RL.learn_step_counter)
-                e_score.append(total_reward)
-                epsilon.append(RL.epsilon)
+            
                 
-        if RL.epsilon == RL.epsilon_end and RL.epsilon_end == 0.1:
-            RL.explore = 5000000
-            RL.epsilon_end = 0.01
+        '''if RL.epsilon == RL.epsilon_end and RL.epsilon_end == 0.1:
+            RL.epsilon_start = 0.1
+            RL.explore = 10000000
+            RL.epsilon_end = 0.01'''
         
         num_game+=1000
-        if RL.learn_step_counter != 0:
-
-            plt.plot(e_step, e_score)
-            plt.ion()#本次运行请注释，全局运行不要注释
-            plt.savefig('./picture/'+str(RL.learn_step_counter)+'.png')
-            #plt.show()
+        if push:
+            e_step.append(RL.learn_step_counter/10000)
+            e_score.append(total_score/100)
+            epsilon.append(RL.epsilon)
+            e_loss.append(total_loss/100)
+            plt.figure()
+            plt.plot(e_step, e_score,'--*b')
+            plt.xlabel('step')
+            plt.ylabel('score')
+            plt.savefig('./picture/'+str(RL.learn_step_counter)+'_score.png')
+            plt.figure()
+            plt.plot(e_step, e_loss,'--*b')
+            plt.xlabel('step')
+            plt.ylabel('loss')
+            plt.savefig('./picture/'+str(RL.learn_step_counter)+'_loss.png')
+            plt.close('all')
+        if total_loss!=0:
+            push = True
 # RL.plot_cost()
