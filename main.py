@@ -58,8 +58,8 @@ if __name__ == "__main__":
             str(env.observation_space)[4:-1].split(','),
             learning_rate= 0.00025,
             reward_decay =0.99,
-            epsilon_start= 0,
-            epsilon_end = 0,
+            epsilon_start= 1,
+            epsilon_end = 0.1,
             explore = 10000000,
             replace_target_iter=10000,
             memory_size= 1000000,
@@ -194,10 +194,10 @@ if __name__ == "__main__":
             print('action'+'action'.join(str(i)+': '+str(action_tracker[i])[:-2]+'  ' for i in range(len(action_tracker))))
             
                 
-        '''if RL.epsilon == RL.epsilon_end and RL.epsilon_end == 0.1:
+        if RL.epsilon == RL.epsilon_end and RL.epsilon_end == 0.1:
             RL.epsilon_start = 0.1
             RL.explore = 10000000
-            RL.epsilon_end = 0.01'''
+            RL.epsilon_end = 0.01
         
         num_game+=1000
         if push:
