@@ -8,6 +8,9 @@ tf.set_random_seed(1)
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 class DeepQNetwork:
+    # initialize some variable, model and check the checkpoint file exist
+    # if (exist) load the checkpoint file to continue to train or show
+    # else  it means it will train wiithout experience 
     def __init__(
         self,
         n_actions,
@@ -70,6 +73,9 @@ class DeepQNetwork:
         self.learn_step_counter = tf.train.global_step(self.sess, self.global_step)
         self.cost_his = []
 
+    # It wiil choose the biggest q_value to be the possible choice
+    # but if (epsilon not equal = 0) then we still possibly choose other choice
+    # and the probability is defined by the epsilon and actions amount
     def make_policy(self, state):
     	q_values = self.predict(np.expand_dims(state, 0))[0]
     	action_probs = np.ones(self.n_actions, dtype=float) * self.epsilon / self.n_actions
@@ -82,47 +88,58 @@ class DeepQNetwork:
     		    self.epsilon = self.epsilon_end
     	return action
 
+    # let state, action(the state chose), reward(get reward form state to n_state with action)
+    # n_state(next state by state )
     def store(self, state, action, reward, n_state, done):
     	self.replay_memory.append([state, action, reward, n_state, done])
     	if len(self.replay_memory) > self.memory_size:
     	    self.replay_memory.pop(0)
 
+    # predict the q_value with state and q_eval 
     def predict(self, state):
     	return self.sess.run(self.q_eval, {self.x_pl: state})
 
+    # predict the q_value with state and q_target
+    # q_target is the q_eval's past
     def predict_t(self, state):
     	return self.sess.run(self.q_target, {self.x_pl_: state})
 
+    # bulid the q_eval, q_target, how to calculate loss, optimizer
+    # and how to optimize q_eval
     def _build_model(self):
+    	# build layers for q_eval, q_target
         def _build_layers(self, x , scope, w_init, b_init):
             with tf.variable_scope(scope):
                 with tf.variable_scope("conv1"):
-                    conv1 = tf.layers.conv2d(x, 16, [3, 3], activation=tf.nn.relu, kernel_initializer=w_init,\
+                    conv1 = tf.layers.conv2d(x, 32, [8, 8], [4, 4], activation=tf.nn.selu, kernel_initializer=w_init,\
 	 		                                 bias_initializer=b_init)
                     #pool1 = tf.layers.max_pooling2d(conv1, [2, 2], [2, 2])
                     #pool1 = tf.layers.average_pooling2d(conv1, [2, 2], [2, 2])
                 with tf.variable_scope("conv2"):
-                    conv2 = tf.layers.conv2d(conv1, 32, [3, 3], activation=tf.nn.relu, kernel_initializer=w_init,\
+                    conv2 = tf.layers.conv2d(conv1, 64, [4, 4], [2, 2], activation=tf.nn.selu, kernel_initializer=w_init,\
 	 		                                 bias_initializer=b_init)
                     #pool2 = tf.layers.max_pooling2d(conv2, [2, 2], [2, 2])
                     #pool2 = tf.layers.average_pooling2d(conv2, [2, 2], [2, 2])
                 with tf.variable_scope("conv3"):
-                    conv3 = tf.layers.conv2d(conv2, 64, [3, 3], activation=tf.nn.relu, kernel_initializer=w_init,\
+                    conv3 = tf.layers.conv2d(conv2, 64, [3, 3], activation=tf.nn.selu, kernel_initializer=w_init,\
 	 		                                 bias_initializer=b_init)
                     #pool3 = tf.layers.max_pooling2d(conv3, [2, 2], [2, 2])
                     #pool3 = tf.layers.average_pooling2d(conv3, [2, 2], [2, 2])
-                with tf.variable_scope("conv4"):
-                    conv4 = tf.layers.conv2d(conv3, 128, [3, 3], activation=tf.nn.relu, kernel_initializer=w_init,\
+                '''with tf.variable_scope("conv4"):
+                    conv4 = tf.layers.conv2d(conv3, 128, [3, 3], activation=tf.nn.selu, kernel_initializer=w_init,\
 	 		                                 bias_initializer=b_init)
                     #pool4 = tf.layers.max_pooling2d(conv4, [2, 2], [2, 2])
                     #pool4 = tf.layers.average_pooling2d(conv4, [2, 2], [2, 2])
-                '''with tf.variable_scope("conv5"):
-                    conv5 = tf.layers.conv2d(conv4, 256, [3, 3], activation=tf.nn.relu, kernel_initializer=w_init,\
-	 			bias_initializer=b_init)'''
+                with tf.variable_scope("conv5"):
+                    conv5 = tf.layers.conv2d(conv4, 256, [3, 3], activation=tf.nn.selu, kernel_initializer=w_init,\
+	 			bias_initializer=b_init)
                     #pool5 = tf.layers.max_pooling2d(conv5, [2, 2], [2, 2])
+                with tf.variable_scope("conv6"):
+                    conv6 = tf.layers.conv2d(conv5, 512, [3, 3], activation=tf.nn.selu, kernel_initializer=w_init,\
+	 			bias_initializer=b_init)'''
                 with tf.variable_scope("flatten"):
-                    flattend = tf.layers.flatten(conv4)
-                    fc = tf.layers.dense(flattend, 512, activation=tf.nn.relu,\
+                    flattend = tf.layers.flatten(conv3)
+                    fc = tf.layers.dense(flattend, 512, activation=tf.nn.selu,\
 	 		                             kernel_initializer=tf.random_normal_initializer(stddev=0.02), bias_initializer=b_init)
                     '''batch_norm = tf.contrib.layers.batch_norm(fc, decay=0.99, updates_collections=None, epsilon=1e-5,\
                                                  scale=True, is_training=True, scope="bn")
@@ -153,11 +170,15 @@ class DeepQNetwork:
             self.optimizer = tf.train.AdamOptimizer(self.lr)
             self.train_op = self.optimizer.minimize(self.loss, global_step=tf.train.get_global_step())
 
+    # let q_target equal to q_eval
     def replace_parms(self):
         self.e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='DQN/eval_net')
         self.t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='DQN/target_net')
         self.sess.run([tf.assign(t, e) for t, e in zip(self.t_params, self.e_params)])
 
+    # if learn fixed times we will ues replace_parms function and save the model
+    # get batch's size memory from we store before
+    # then use them to calculate q_values(new) and delivery to update
     def learn(self):
         if self.learn_step_counter % self.replace_target_iter ==  self.replace_target_iter - 1:
             self.replace_parms()
@@ -175,6 +196,7 @@ class DeepQNetwork:
                                                self.gamma * q_next[batch_index, best_actions]
         loss = self.update(states_batch, q_values)
         return loss
+    # feed the y_pl(q_values(new)) and states to calculate loss, then use loss to optimize q_eval
     def update(self, states, y_pl):
         feed_dict={self.x_pl: states, self.y_pl: y_pl}
 
