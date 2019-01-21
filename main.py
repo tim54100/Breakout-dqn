@@ -7,6 +7,7 @@ import sys
 # sys.path.append("/home/eastgeno/workspace/gym")
 # sys.path.append("/home/eastgeno/anaconda2/lib/python2.7/site-packages")
 import cv2
+import os
 import pyglet
 import tensorflow as tf
 import gym
@@ -201,6 +202,8 @@ if __name__ == "__main__":
         
         num_game+=1000
         if push:
+            if not os.path.exists('picture'):
+                os.makedirs('picture')
             e_step.append(RL.learn_step_counter/10000)
             e_score.append(total_score/100)
             epsilon.append(RL.epsilon)
