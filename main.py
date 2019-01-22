@@ -84,7 +84,7 @@ if __name__ == "__main__":
         loss_step /=100
         total_score = 0
         total_loss = 0
-        for episode in range(1000):
+        for episode in range(100):
             state = env.reset()
             
             img = Image.fromarray(np.array(state), 'L')
