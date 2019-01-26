@@ -1,7 +1,7 @@
 # Breakout-dqn
 Dueling double DQN in openai gym's enviroment, Breakout-v0.
 
-run the command behind to train a agent which will paly Breakout.
+run the command behind to train a agent which will play Breakout.
 ```
 python main.py
 ```
@@ -13,4 +13,4 @@ env.render()
 
 Agent play more than 300 games, you can see the loss and score line chart in 'picture' directory.
 
-ps: you need to spend long time training your agent and the result will like the [link](https://www.youtube.com/watch?v=roE2-phUPn8&list=PLWLX2SCnm3Lv_MHeQ7leMjwgt2EHrr4SI&index=10).
+ps: you need to spend long time training your agent and the result will like the [video](https://www.youtube.com/watch?v=roE2-phUPn8&list=PLWLX2SCnm3Lv_MHeQ7leMjwgt2EHrr4SI&index=10).
